@@ -1,9 +1,24 @@
 import express from 'express';
-import authSeller from '../middleware/authSeller.js';
-import { updateCart } from '../controllers/cartController.js';
+import {
+  addToCart,
+  clearCart,
+  deleteCartItem,
+  getCart,
+  updateCartItem,
+} from '../controllers/cartController.js';
 
-const cartRouter = express.Router();
+import authMiddleware from '../middleware/authUser.js';
 
-cartRouter.post('/update', authSeller, updateCart);
+const CartRouter = express.Router();
 
-export default cartRouter;
+CartRouter.route('/')
+  .get(authMiddleware, getCart)
+  .post(authMiddleware, addToCart);
+
+CartRouter.post('/clear', authMiddleware, clearCart);
+
+CartRouter.route('/:id')
+  .put(authMiddleware, updateCartItem)
+  .delete(authMiddleware, deleteCartItem);
+
+export default CartRouter;

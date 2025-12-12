@@ -1,58 +1,171 @@
 import Order from '../models/Order.js';
-import Product from '../models/Product.js';
-import Stripe from 'stripe';
-// Place Order COD : /api/order/cod
-export const placeOrderCOD = async (req, res) => {
-  try {
-    const { userId, items, address } = req.body;
 
-    if (!address || items.length === 0) {
-      return res.json({ success: false, message: 'Invalid data' });
+export const createOrder = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      phone,
+      email,
+      address,
+      city,
+      zipCode,
+      paymentMethod,
+      subtotal,
+      tax,
+      total,
+      items,
+    } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Invalid or empty items array' });
     }
 
-    // Calculate Amount Using Items
-    let amount = await items.reduce(async (acc, item) => {
-      const product = await Product.findById(item.product);
-      return (await acc) + product.offerPrice * item.quantity;
-    }, 0);
-    amount += Math.floor(amount * 0.02);
-    await Order.create({
-      userId,
-      items,
-      amount,
+    const orderItems = items.map(
+      ({ item, name, price, imageUrl, quantity }) => {
+        const base = item || {};
+        return {
+          item: {
+            name: base.name || name || 'Unknown',
+            price: Number(base.price ?? price) || 0,
+            imageUrl: base.imageUrl || imageUrl || '',
+          },
+          quantity: Number(quantity) || 0,
+        };
+      }
+    );
+    // DEFAULT SHIPPING COST
+    const shippingCost = 0;
+    let newOrder;
+    newOrder = new Order({
+      user: req.user._id,
+      firstName,
+      lastName,
+      phone,
+      email,
       address,
-      paymentType: 'COD',
+      city,
+      zipCode,
+      paymentMethod,
+      subtotal,
+      tax,
+      total,
+      shipping: shippingCost,
+      items: orderItems,
+      paymentStatus: 'succeeded',
     });
-    res.json({ success: true, message: 'Order Placed Succesfully' });
-  } catch (error) {
-    res.json({ success: false, message: error.message });
-  }
-};
 
-export const getUserOrders = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const orders = await Order.find({
-      userId,
-      $or: [{ paymentType: 'COD' }, { isPaid: true }],
-    })
-      .populate('items.product address')
-      .sort({ created: -1 });
-    res.json({ success: true, orders });
+    await newOrder.save();
+    return res.status(201).json({ order: newOrder, checkoutUrl: null });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, error: error.message });
   }
 };
-export const getAllOrders = async (req, res) => {
+export const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      $or: [{ paymentType: 'COD' }, { isPaid: true }],
-    })
-      .populate('items.product')
-      .populate('address')
-      .sort({ createdAt: -1 });
-    res.json({ success: true, orders });
+    const filter = { user: req.user.id };
+    const rawOrders = await Order.find(filter).sort({ createdAt: -1 }).lean();
+
+    const formatted = rawOrders.map((o) => ({
+      ...o,
+      items: o.items.map((i) => ({
+        _id: i._id,
+        item: i.item,
+        quantity: i.quantity,
+      })),
+      createdAt: o.createdAt,
+      paymentStatus: o.paymentStatus,
+    }));
+    res.json(formatted);
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error('CreateOrder Error:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+export const getAllOrder = async (req, res) => {
+  try {
+    const raw = await Order.find({}).sort({ createdAt: -1 }).lean();
+
+    const formatted = raw.map((o) => ({
+      _id: o._id,
+      user: o.user,
+      firstName: o.firstName,
+      lastName: o.lastName,
+      email: o.email,
+      phone: o.phone,
+      address: o.address ?? o.shippingAddress,
+      city: o.city ?? o.shippingAddress?.city ?? '',
+      zipCode: o.zipCode ?? o.shippingAddress?.zipCode ?? '',
+      paymentMethod: o.paymentMethod,
+      paymentStatus: o.paymentStatus,
+      status: o.status,
+      createdAt: o.createdAt,
+      items: o.items.map((i) => ({
+        _id: i._id,
+        item: i.item,
+        quantity: i.quantity,
+      })),
+    }));
+    res.json(formatted);
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+};
+// UPDATE ORDER WITHOUT TOKEN FOR ADMIN
+export const updateAnyOrder = async (req, res) => {
+  try {
+    const updated = await Order.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+};
+export const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (!order.user.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
+
+    if (req.query.email && order.email !== req.query.email) {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+};
+export const updateOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (!order.user.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
+
+    if (req.body.email && order.email !== req.body.email) {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
+
+    const updated = await Order.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    res.json(updated);
+  } catch (error) {
+    res.json({ success: false, error: error.message });
   }
 };

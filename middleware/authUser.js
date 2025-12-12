@@ -1,26 +1,25 @@
 import jwt from 'jsonwebtoken';
+import asyncHandler from 'express-async-handler';
+import User from '../models/User.js';
 
-const authUser = async (req, res, next) => {
-  const { token } = req.cookies;
+const authMiddleware = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.json({ success: false, message: 'Not authorized' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401);
+    throw new Error('Not authorized, no token');
   }
+
+  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (!decoded.id) {
-      return res.json({ success: false, message: 'Not authorized' });
-    }
-
-    // Attach user ID safely
-    req.userId = decoded.id;
-
+    req.user = await User.findById(decoded.id).select('-password');
     next();
-  } catch (error) {
-    return res.json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(401);
+    throw new Error('Not authorized, token failed');
   }
-};
+});
 
-export default authUser;
+export default authMiddleware;
