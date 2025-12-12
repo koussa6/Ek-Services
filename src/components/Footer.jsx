@@ -1,40 +1,114 @@
-import React from 'react';
-import { assets, footerLinks } from '../assets/assets.js';
+import React, { useState } from 'react';
+import { FaRegEnvelope } from 'react-icons/fa';
+import { BiChevronRight } from 'react-icons/bi';
+import { socialIcons } from '../assets/dummydata';
+
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const submitHandler = (e) => {
+    e.preventDefault();
+  };
+  const navItems = [
+    { name: 'Home', link: '/' },
+    { name: 'Menu', link: '/menu' },
+    { name: 'About Us', link: '/about' },
+    { name: 'Contact', link: '/contact' },
+  ];
   return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-32 bg-primary/10">
-      <div className="flex flex-col md:flex-row items-start justify-between gap-10 py-10 border-b border-gray-500/30 text-gray-500">
-        <div>
-          <img className="w-34 md:w-32" src={assets.logo} alt="logo" />
-          <p className="max-w-[410px] mt-6">
-            We deliver free groceries and snacks straight to your door. Trusted
-            by thousands, we aim to make your shopping experience simple and
-            affordable.
-          </p>
-        </div>
-        <div className="flex flex-wrap justify-between w-full md:w-[45%] gap-5">
-          {footerLinks.map((section, index) => (
-            <div key={index}>
-              <h3 className="font-semibold text-base text-gray-900 md:mb-5 mb-2">
-                {section.title}
+    <div className="bg-[#2A211C] text-amber-100 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-12">
+          <div className="space-y-6">
+            <h2 className="text-4xl sm:text-5xl font-bold font-sacramento text-amber-400 animate-pulse">
+              EK Services{' '}
+            </h2>
+            <p className="text-amber-200/90 text-sm font-sacramento italic">
+              When culinary artistry meets doorstep convenience.
+              <br />
+              Savor handcrafted perfection, delivered with care.
+            </p>
+            <form onSubmit={submitHandler} className="relative mt-4 group">
+              <div className="flex items-center gap-2 mb-2">
+                <FaRegEnvelope className="text-amber-400 animate-pulse" />
+                <span className="font-bold text-amber-400">
+                  Get exclusive offers
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="email"
+                  placeholder="Email@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-amber-50/5 border-2 border-amber-400/30 focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/20 transition-all duration-300 placeholder-amber-200/50"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="absolute  right-1 top-1 bg-gradient-to-br from-amber-300 via-orange-500 to-amber-600 text-white px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg hover:shadow-amber-400/30 overflow-hidden transition-all duration-500"
+                >
+                  <span className="font-bold text-sm tracking-wide transition-transform duration group-hover:-translate-x-1">
+                    Join Now
+                  </span>
+                  <BiChevronRight className="text-xl transition-transform duration-300 group-hover:animate-spin flex-shrink-0" />
+                  <span className="absolute inset-0 translate-x-full bg-gradient-to-br from-transparent via-amber-50/30 to-transparent group-hover:translate-x-full transition-transform duration-300"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+          {/* MIDDLE COLUMN*/}
+          <div className="flex justify-center">
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold mb-4 border-l-4 border-amber-400 pl-3 font-merriweather italic text-amber-300">
+                Navigation
               </h3>
-              <ul className="text-sm space-y-1">
-                {section.links.map((link, i) => (
-                  <li key={i}>
-                    <a href={link.url} className="hover:underline transition">
-                      {link.text}
+              <ul className="space-y-3">
+                {navItems.map((item, i) => (
+                  <li key={item.name}>
+                    <a
+                      href={item.link}
+                      className="flex items-center hover:text-amber-400 transition-all group font-lora hover:pl-2"
+                    >
+                      <BiChevronRight className="mr-2 text-amber-400 group-hover:animate-bounce" />
+                      <span className="hover-italic">{item.name}</span>
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
-          ))}
+          </div>
+          <div className="flex justify-center md:justify-end">
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold mb-4 border-l-4 border-amber-400 pl-3 font-merriweather italic text-amber-300">
+                Social Content
+              </h3>
+              <div className="flex space-x-4">
+                {socialIcons.map(({ icon: Icon, link, color, label }, i) => (
+                  <a
+                    target="_blank"
+                    href={link}
+                    key={i}
+                    className="text-2xl bg-amber-400/10 p-3 rounded-full hover:bg-amber-400/20 transition-all duration-300 relative group"
+                    style={{ color }}
+                  >
+                    <Icon className="hover:scale-125 transition-transform" />
+                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-amber-400 text-black px-2 py-1 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      {label}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="group inline-block">
+          <p className="text-lg font-sacramento bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 bg-clip-text text-transparent hover:text-purple-300 transition-all duration-500">
+            Designed by Elia Koussa
+          </p>
         </div>
       </div>
-      <p className="py-4 text-center text-sm md:text-base text-gray-500/80">
-        Copyright {new Date().getFullYear()} © E.K All Right Reserved.
-      </p>
     </div>
   );
 };
+
 export default Footer;

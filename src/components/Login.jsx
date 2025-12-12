@@ -1,161 +1,152 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { FaUser, FaLock } from 'react-icons/fa';
+import { MdEmail } from 'react-icons/md';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
-
-const Login = () => {
+import toast, { Toaster } from 'react-hot-toast';
+const Login = ({ onLoginSuccess }) => {
   const [state, setState] = useState('login');
-  const { navigate, setShowUserLogin, setUser, axios } = useAppContext();
+  const { setShowLoginModal } = useAppContext();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
+    rememberMe: false,
   });
-
-  const handleSubmit = async (e) => {
+  const changeHandler = ({ target: { name, value, type, checked } }) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+  useEffect(() => {
+    const stored = localStorage.getItem('loginData');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setFormData((prev) => ({
+        ...prev,
+        ...parsed,
+      }));
+    }
+  }, []);
+  const submitHandler = async (e) => {
+    const payload =
+      state === 'login'
+        ? { email: formData.email, password: formData.password }
+        : {
+            email: formData.email,
+            password: formData.password,
+            name: formData.name,
+          };
+    e.preventDefault();
     try {
-      e.preventDefault();
-      const { name, email, password } = formData;
-      const { data } = await axios.post(`/api/user/${state}`, {
-        email,
-        name,
-        password,
-      });
+      const { data } = await axios.post(
+        `http://localhost:5000/api/user/${state}`,
+        payload
+      );
       if (data.success) {
-        navigate('/');
-        setUser(data.user);
-        setShowUserLogin(false);
-      } else {
-        toast.error(data.message);
+        localStorage.setItem('authToken', data.token);
+
+        toast.success(`${state === 'login' ? 'Login' : 'SignUp'} Successfully`);
+        setFormData((prev) => ({ ...prev, name: '', email: '', password: '' }));
+        if (formData.rememberMe) {
+          localStorage.setItem(
+            'loginData',
+            JSON.stringify({ email: formData.email })
+          );
+        } else {
+          localStorage.removeItem('loginData');
+        }
+        onLoginSuccess();
+        setShowLoginModal(false);
       }
     } catch (error) {
       toast.error(error.message);
     }
   };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <div
-      onClick={() => setShowUserLogin(false)}
-      className="fixed inset-0 z-10 flex items-center justify-center text-sm text-gray-600 bg-black/50"
-    >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        className="sm:w-[350px] w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white"
-      >
-        <h1 className="text-gray-900 text-3xl mt-10 font-medium">
-          {state === 'login' ? 'Login' : 'Sign up'}
-        </h1>
-        <p className="text-gray-500 text-sm mt-2">Please sign in to continue</p>
-        {state !== 'login' && (
-          <div className="flex items-center mt-6 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#6B7280"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-user-round-icon lucide-user-round"
-            >
-              <circle cx="12" cy="8" r="5" />
-              <path d="M20 21a8 8 0 0 0-16 0" />
-            </svg>
+    <div className="pt-5">
+      <form onSubmit={submitHandler} className="flex flex-col gap-7">
+        {state === 'signUp' ? (
+          <div className="flex flex-row border-2 w-full border-1 border-[#2D1A0A]/50  bg-[#2D1B0E]/50 py-4 border-none hover:scale-105 transition-colors transition-transform duration-200 rounded-lg py-2 text-amber-400 focus:border-amber-500 outline-none">
+            <span className=" translate-y-1 translate-x-2">
+              <FaUser />
+            </span>
             <input
               type="text"
               name="name"
-              placeholder="Name"
-              className="border-none outline-none ring-0"
+              className="w-full border-none outline-none pl-4"
               value={formData.name}
-              onChange={handleChange}
-              required
+              onChange={changeHandler}
+              placeholder="Username"
             />
           </div>
+        ) : (
+          ''
         )}
-        <div className="flex items-center w-full mt-4 bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6B7280"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-mail-icon lucide-mail"
-          >
-            <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" />
-            <rect x="2" y="4" width="20" height="16" rx="2" />
-          </svg>
+        <div className="flex flex-row border-2 w-full border-1 border-[#2D1A0A]/50  bg-[#2D1B0E]/50 py-4 border-none hover:scale-105 transition-colors transition-transform duration-200 rounded-lg py-2 text-amber-400 focus:border-amber-500 outline-none">
+          <span className="pr-2 text-lg translate-y-1 translate-x-2">
+            <MdEmail />
+          </span>
+
           <input
-            type="email"
+            type="text"
             name="email"
-            placeholder="Email id"
-            className="border-none outline-none ring-0"
+            className="w-full border-none outline-none pl-2"
             value={formData.email}
-            onChange={handleChange}
-            required
+            onChange={changeHandler}
+            placeholder="Email@gmail.com"
           />
         </div>
-        <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6B7280"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-lock-icon lucide-lock"
-          >
-            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
+        <div className="flex flex-row border-2 w-full border-1 border-[#2D1A0A]/50  bg-[#2D1B0E]/50 py-4  border-none hover:scale-105 transition-colors transition-transform duration-200 rounded-lg py-2 text-amber-400 focus:border-amber-500 outline-none">
+          <span className="pr-2 translate-y-1 translate-x-2">
+            <FaLock />
+          </span>
           <input
             type="password"
             name="password"
-            placeholder="Password"
-            className="border-none outline-none ring-0"
+            className="w-full border-none outline-none pl-2"
             value={formData.password}
-            onChange={handleChange}
-            required
+            onChange={changeHandler}
+            placeholder="Password"
           />
         </div>
-        <div className="mt-4 text-left text-primary">
-          <button className="text-sm" type="reset">
-            Forget password?
-          </button>
-        </div>
+        {state === 'login' ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={formData.rememberMe}
+              onChange={changeHandler}
+              className="accent-amber-400"
+            />
+            <label className="text-amber-400">Remember Me</label>
+          </div>
+        ) : (
+          ''
+        )}
         <button
           type="submit"
-          className="mt-2 w-full h-11 rounded-full text-white bg-primary hover:opacity-90 transition-opacity"
+          className="w-full bg-gradient-to-br from-amber-400 rounded-2xl py-3 to-amber-700"
         >
-          {state === 'login' ? 'Login' : 'Sign up'}
+          {state === 'login' ? 'Login' : 'SignUp'}
         </button>
-        <p
-          onClick={() =>
-            setState((prev) => (prev === 'login' ? 'register' : 'login'))
-          }
-          className="text-gray-500 text-sm mt-3 mb-11"
-        >
-          {state === 'login'
-            ? "Don't have an account?"
-            : 'Already have an account?'}{' '}
-          <a href="#" className="text-primary hover:underline">
-            click here
-          </a>
-        </p>
       </form>
+      {state === 'login' ? (
+        <div
+          className="cursor-pointer text-amber-400 pt-5 w-full text-center hover:underline "
+          onClick={() => setState('signUp')}
+        >
+          Create a new account
+        </div>
+      ) : (
+        <div
+          className="cursor-pointer text-amber-400 w-full pt-5 text-center hover:underline"
+          onClick={() => setState('login')}
+        >
+          Back to Login
+        </div>
+      )}
     </div>
   );
 };

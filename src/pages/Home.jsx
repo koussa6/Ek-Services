@@ -1,19 +1,18 @@
 import React from 'react';
-import MainBanner from '../components/MainBanner';
-import Categories from '../components/Categories';
-import BestSeller from '../components/BestSeller';
-import BottomBanner from '../components/BottomBanner';
-import NewsLetter from '../components/NewsLetter';
-
+import NavBar from '../components/NavBar';
+import Banner from '../components/Banner';
+import Login from '../components/Login';
+import SpeicalOffer from '../components/SpeicalOffer';
+import AboutHome from '../components/AboutHome';
+import OurHomeMenu from '../components/OurHomeMenu';
 const Home = () => {
   return (
-    <div className="mt-10">
-      <MainBanner />
-      <Categories />
-      <BestSeller />
-      <BottomBanner />
-      <NewsLetter />
-    </div>
+    <>
+      <Banner />
+      <SpeicalOffer />
+      <AboutHome />
+      <OurHomeMenu />
+    </>
   );
 };
 
