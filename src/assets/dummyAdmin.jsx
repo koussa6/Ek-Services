@@ -16,7 +16,7 @@ const CheckoutPage = () => {
   };
 };
 
-// DUMMY DATA FOR MYORDERPAGE
+
 
 const formattedOrders = response.data.map((order) => ({
   ...order,
@@ -83,7 +83,6 @@ const statusStyles = {
   <th className="p-4 text-left text-amber-400">Payment</th>
   <th className="p-4 text-left text-amber-400">Status</th>
 </tr>;
-
 {
 
     return (
